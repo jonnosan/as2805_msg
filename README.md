@@ -188,7 +188,7 @@ except AS2805ParseError as e:
 This library implements the message encoding defined in:
 
 - **AS 2805.2-2015** (Australian Standard for Financial Transaction Card Originated Messages)
-- **eftpos Hub Link Specification (eLS) V23.04.01**
+
 
 See [FUNC_SPEC.md](FUNC_SPEC.md) for the full functional specification including field definitions, sub-field formats, and encoding rules.
 
