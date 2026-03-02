@@ -230,7 +230,7 @@ def _decode_fixed(spec: FieldSpec, data: bytes, offset: int):
         return value, num_bytes
 
     if ft in ("a", "an", "ans"):
-        value = data[offset:offset + spec.max_length].decode("ascii")
+        value = codec.ascii_decode(data[offset:offset + spec.max_length])
         return value, spec.max_length
 
     if ft == "b":
