@@ -205,3 +205,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+specs/eftpos Hub Link Specification 23.04.01_Clean.pdf
+.claude/settings.local.json
