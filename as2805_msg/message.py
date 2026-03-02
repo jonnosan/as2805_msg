@@ -30,6 +30,22 @@ class AS2805Message:
         field_nums = sorted(self.fields.keys())
         return f"AS2805Message(mti={self.mti!r}, fields={field_nums})"
 
+    def __str__(self) -> str:
+        schema = ELS_SCHEMA
+        lines = [f"MTI: {self.mti}"]
+        for fnum in sorted(self.fields.keys()):
+            value = self.fields[fnum]
+            if fnum in schema:
+                name = schema.get(fnum).name
+            else:
+                name = f"Field {fnum:03d}"
+            if isinstance(value, bytes):
+                val_str = value.hex(" ")
+            else:
+                val_str = str(value)
+            lines.append(f"  [{fnum:03d}] {name}: {val_str}")
+        return "\n".join(lines)
+
     @classmethod
     def unpack(cls, data: bytes, schema: FieldSchema | None = None) -> "AS2805Message":
         """Decode a message from raw bytes (excluding 2-byte length header)."""
