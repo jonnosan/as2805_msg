@@ -18,8 +18,9 @@ The library handles the binary wire format of AS2805 messages: framing, message 
 - 2-byte message length header (framing)
 - Field 47 (Additional Data - National) sub-element TLV parsing
 - Field 55 (ICC Related Data) BER-TLV parsing
-- Field 113 (Payment Token Data) TLV parsing
 - Field 90 (Original Data Elements) composite sub-field parsing
+- Field 111 (Encryption Data) AES data set parsing (per DR AS 2805.2:2025)
+- Field 113 (Payment Token Data) TLV parsing
 
 ### Out of Scope
 
@@ -167,18 +168,19 @@ The following table defines all data elements (fields) used across eLS message t
 | 090   | Original Data Elements                | n      | 42         | Fixed       |
 | 095   | Replacement Amounts                   | an     | 42         | Fixed       |
 | 100   | Receiving Institution ID Code         | n      | ..11       | LLVAR       |
+| 111   | Encryption Data                       | b      | ....9999   | LLLLVAR     |
 | 113   | Payment Token Data                    | b      | ..999      | LLLVAR      |
 | 128   | Message Authentication Code (MAC)     | b      | 64 bits    | Fixed       |
 
-## 6. Field 47 - Additional Data National (TLV Sub-elements)
+## 6. Field 47 - Additional Data National (Backslash-Delimited Sub-elements)
 
-Field 47 contains sub-elements in a tag-value format. Each sub-element consists of:
+Field 47 contains sub-elements in a tag-value format delimited by backslashes. Each sub-element consists of:
 
 ```
-| Tag (3 bytes ASCII) | Length (3 bytes ASCII) | Value (variable) |
+| Tag (3 bytes ASCII) | Value (variable) | "\" delimiter |
 ```
 
-Tags and their lengths are encoded as zero-padded ASCII decimal strings.
+The backslash (`\`, 0x5C) terminates each tag's value. The parser reads from after the tag name until the next backslash to extract the value.
 
 ### 6.1 Known Tags
 
@@ -197,6 +199,53 @@ Tags and their lengths are encoded as zero-padded ASCII decimal strings.
 | DCP    | Deferred Card Present                       | an   | 2          |
 | CAV    | Cardholder Authentication Verification      | ans  | variable   |
 | OLT    | Open Loop Transit                           | ans  | variable   |
+
+## 6a. Field 111 - Encryption Data (AES)
+
+Per DR AS 2805.2:2025, Field 111 carries AES encryption data and key management information. It replaces Fields 52 and 53 when AES encryption is used.
+
+- **Wire format**: LLLLVAR `b ....9999` — 4-digit BCD length prefix (2 bytes), binary content up to 9999 bytes.
+
+### Structure
+
+Field 111 contains one or more **data sets**. Each data set is encoded as:
+
+```
+| Data Set ID (1 byte) | Length (2 bytes BCD, 4 digits) | TLV items... |
+```
+
+Data Set IDs:
+- `01` = PIN encryption
+- `02` = MAC
+- `03` = Data encryption
+- `04` = Key exchange
+
+### TLV Tags (ISO 13492)
+
+Within each data set, items use single-byte tags with short/long form lengths:
+
+| Tag | Name                                      | Repr    | Required    |
+|-----|-------------------------------------------|---------|-------------|
+| 80  | Control                                   | b 1     | Mandatory   |
+| 81  | Key-set identifier                        | b 4     | Mandatory   |
+| 82  | Derived information / Device ID + TC      | b 8     | Conditional |
+| 83  | Algorithm                                 | n 2     | Mandatory   |
+| 84  | Key length                                | n 4     | Conditional |
+| 85  | Key protection                            | n 2     | Optional    |
+| 86  | Key index                                 | n 2/5   | Optional    |
+| 87  | PIN block format / Encrypted data         | variable| Varies      |
+| 88  | Encrypted PIN block / Key checksum value  | variable| Varies      |
+| 89  | Additional encrypted PIN block            | b 16    | Optional    |
+
+### Control Values (Tag 80)
+
+- `02` = Master/Session key management
+- `06` = AES DUKPT
+
+### Algorithm Values (Tag 83)
+
+- `05` = AES (PIN and Data encryption)
+- `06` = AES CMAC (MAC)
 
 ## 7. Field 55 - ICC Related Data (BER-TLV)
 

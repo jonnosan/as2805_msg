@@ -106,16 +106,24 @@ def _read_length_prefix(spec: FieldSpec, data: bytes, offset: int) -> tuple[int,
             raise ValueError("Not enough data for LLLVAR length prefix")
         length = int(codec.bcd_decode(data[offset:offset + 2], 4))
         return length, 2
+    if spec.length_type == "llllvar":
+        # LLLLVAR: 4-digit BCD prefix = 2 bytes (per AS 2805.2:2025 Table I.2)
+        if offset + 2 > len(data):
+            raise ValueError("Not enough data for LLLLVAR length prefix")
+        length = int(codec.bcd_decode(data[offset:offset + 2], 4))
+        return length, 2
     raise ValueError(f"Unexpected length_type: {spec.length_type}")
 
 
 def _write_length_prefix(spec: FieldSpec, content_length: int) -> bytes:
-    """Write a LLVAR/LLLVAR length prefix."""
+    """Write a LLVAR/LLLVAR/LLLLVAR length prefix."""
     if spec.length_type == "llvar":
         return codec.bcd_encode(str(content_length).zfill(2), 1)
     if spec.length_type == "lllvar":
         if spec.number == 48:
             return str(content_length).zfill(3).encode("ascii")
+        return codec.bcd_encode(str(content_length).zfill(4), 2)
+    if spec.length_type == "llllvar":
         return codec.bcd_encode(str(content_length).zfill(4), 2)
     raise ValueError(f"Unexpected length_type: {spec.length_type}")
 
@@ -311,6 +319,7 @@ def _build_els_schema() -> FieldSchema:
         (90,  "Original Data Elements",               "n",   42,   "fixed"),
         (95,  "Replacement Amounts",                  "an",  42,   "fixed"),
         (100, "Receiving Institution ID Code",        "n",   11,   "llvar"),
+        (111, "Encryption Data",                       "b",  9999,  "llllvar"),
         (113, "Payment Token Data",                   "b",   999,  "lllvar"),
         (128, "Message Authentication Code",          "b",    8,   "fixed"),
     ]

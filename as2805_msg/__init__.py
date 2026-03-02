@@ -21,7 +21,7 @@ from .errors import (
     AS2805FieldError,
     AS2805ParseError,
 )
-from .fields import Field47, Field48, Field55, Field90, Field113
+from .fields import Field47, Field48, Field55, Field90, Field111, DataSet, Field113
 from .helpers import Amount, POSEntryModeInfo, ProcessingCode, ResponseCodeInfo
 from .message import AS2805Message
 from .schema import ELS_SCHEMA, FieldSchema, FieldSpec
@@ -38,6 +38,8 @@ __all__ = [
     "Field48",
     "Field55",
     "Field90",
+    "Field111",
+    "DataSet",
     "Field113",
     # Schema
     "FieldSpec",

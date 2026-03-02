@@ -8,8 +8,8 @@ A Python library for encoding and decoding AS2805.2 financial messages.
 - All message types: financial (0100-0430), reconciliation (0520-0530), network management (0800-0830)
 - Primary and secondary bitmap handling
 - All field data types: numeric (BCD), alphanumeric (ASCII), binary, track 2, signed amounts
-- Variable-length field support (LLVAR, LLLVAR)
-- Sub-field parsers for Field 47 (national TLV), Field 55 (EMV BER-TLV), Field 90 (original data elements), Field 113 (payment token TLV)
+- Variable-length field support (LLVAR, LLLVAR, LLLLVAR)
+- Sub-field parsers for Field 47 (national TLV), Field 55 (EMV BER-TLV), Field 90 (original data elements), Field 111 (AES encryption data), Field 113 (payment token TLV)
 - 2-byte length header framing for stream processing
 - MAC input extraction for external cryptographic processing
 - Configurable field schemas
@@ -96,7 +96,7 @@ from as2805_msg import AS2805Message, Field47, Field55
 
 msg = AS2805Message.unpack(raw)
 
-# Parse Field 47 TLV sub-elements
+# Parse Field 47 sub-elements (backslash-delimited: TAG + VALUE + "\")
 tags = Field47.unpack(msg[47])
 print(tags["TCC"])    # Terminal Capability Code
 print(tags["PCA"])    # Post Code - Card Acceptor
@@ -112,6 +112,22 @@ msg[47] = Field47.pack({
     "PCA": b"2000",
     "FCA": b"01",
 })
+
+# Parse Field 111 AES encryption data sets (DR AS 2805.2:2025)
+from as2805_msg import Field111, DataSet
+datasets = Field111.unpack(msg[111])
+for ds in datasets:
+    print(ds.name)                    # "PIN encryption", "MAC", etc.
+    print(ds.elements[0x80].hex())    # Control byte
+
+# Build Field 111
+msg[111] = Field111.pack([
+    DataSet(dataset_id=0x02, elements={
+        0x80: b"\x02",                 # Master/Session
+        0x81: b"\x00\x00\x00\x00",    # Default key-set
+        0x83: b"\x06",                 # AES CMAC
+    }),
+])
 ```
 
 ### MAC input extraction
@@ -188,6 +204,7 @@ except AS2805ParseError as e:
 This library implements the message encoding defined in:
 
 - **AS 2805.2-2015** (Australian Standard for Financial Transaction Card Originated Messages)
+- **DR AS 2805.2:2025** (Draft revision adding Field 111 for AES encryption support)
 
 
 See [FUNC_SPEC.md](FUNC_SPEC.md) for the full functional specification including field definitions, sub-field formats, and encoding rules.

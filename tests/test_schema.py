@@ -98,7 +98,7 @@ class TestEncodeDecodeVariable:
 
     def test_lllvar_ans(self):
         spec = ELS_SCHEMA.get(47)  # Additional Data National, ans..999 LLLVAR
-        text = "TCC002R2PCA0042000"
+        text = "TCCR2\\PCA2000\\"
         encoded = encode_field(spec, text)
         value, consumed = decode_field(spec, encoded, 0)
         assert value == text

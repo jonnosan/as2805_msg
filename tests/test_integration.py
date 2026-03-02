@@ -25,7 +25,7 @@ class TestPOSPurchaseMessage:
         msg[41] = "TERM0001"                          # Terminal ID
         msg[42] = "MERCHANT0000001"                   # Merchant ID
         msg[43] = "GROCERY STORE           SYDNEY      AU"  # 40 chars
-        msg[47] = "TCC002R2PCA0042000FCA00201"        # Field 47 sub-elements
+        msg[47] = "TCCR2\\PCA2000\\FCA01\\"              # Field 47 sub-elements
         msg[52] = b"\x12\x34\x56\x78\x9A\xBC\xDE\xF0"  # PIN block
         msg[53] = "0000000000000001"                  # Security control (key set 1)
         msg[57] = "000000000000"                      # Cash amount = 0
@@ -53,7 +53,7 @@ class TestPOSPurchaseMessage:
         assert msg2[41] == "TERM0001"
         assert msg2[42] == "MERCHANT0000001"
         assert msg2[43] == "GROCERY STORE           SYDNEY      AU"
-        assert msg2[47] == "TCC002R2PCA0042000FCA00201"
+        assert msg2[47] == "TCCR2\\PCA2000\\FCA01\\"
         assert msg2[52] == b"\x12\x34\x56\x78\x9A\xBC\xDE\xF0"
         assert msg2[53] == "0000000000000001"
         assert msg2[57] == "000000000000"
@@ -64,7 +64,7 @@ class TestPOSPurchaseMessage:
         msg = AS2805Message(mti="0200")
         msg[3] = "000000"
         msg[4] = "000000001000"
-        msg[47] = "TCC002R2PCA0042000FCA00201"
+        msg[47] = "TCCR2\\PCA2000\\FCA01\\"
         msg[53] = "0000000000000001"
 
         raw = msg.pack()
