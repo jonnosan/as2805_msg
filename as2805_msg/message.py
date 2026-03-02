@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from . import codec
 from .bitmap import build_bitmap, parse_bitmap
 from .errors import AS2805BuildError, AS2805FieldError, AS2805ParseError
 from .schema import ELS_SCHEMA, FieldSchema, decode_field, encode_field
+
+if TYPE_CHECKING:
+    from .helpers import Amount, POSEntryModeInfo, ProcessingCode, ResponseCodeInfo
 
 
 class AS2805Message:
@@ -45,6 +48,46 @@ class AS2805Message:
                 val_str = str(value)
             lines.append(f"  [{fnum:03d}] {name}: {val_str}")
         return "\n".join(lines)
+
+    @property
+    def amount(self) -> Amount | None:
+        """Human-friendly view of Field 4 (transaction amount)."""
+        if 4 not in self.fields:
+            return None
+        from .helpers import Amount
+        return Amount(raw=self.fields[4])
+
+    @property
+    def processing_code(self) -> ProcessingCode | None:
+        """Human-friendly view of Field 3."""
+        if 3 not in self.fields:
+            return None
+        from .helpers import ProcessingCode
+        return ProcessingCode(raw=self.fields[3])
+
+    @property
+    def response_code(self) -> ResponseCodeInfo | None:
+        """Human-friendly view of Field 39."""
+        if 39 not in self.fields:
+            return None
+        from .helpers import ResponseCodeInfo
+        return ResponseCodeInfo(code=self.fields[39])
+
+    @property
+    def pos_entry_mode(self) -> POSEntryModeInfo | None:
+        """Human-friendly view of Field 22."""
+        if 22 not in self.fields:
+            return None
+        from .helpers import POSEntryModeInfo
+        return POSEntryModeInfo(raw=self.fields[22])
+
+    def validate(self) -> list:
+        """Validate field presence for this message's MTI.
+
+        Returns an empty list if valid, otherwise a list of ValidationError.
+        """
+        from .validation import validate_message
+        return validate_message(self)
 
     @classmethod
     def unpack(cls, data: bytes, schema: FieldSchema | None = None) -> "AS2805Message":
